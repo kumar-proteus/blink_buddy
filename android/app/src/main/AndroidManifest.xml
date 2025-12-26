@@ -1,0 +1,101 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+
+>
+
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"/>
+
+    <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> -->
+<!-- <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> -->
+    <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/> -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+<uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+
+    <!-- Android 13+ specific foreground service permissions -->
+<!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" /> -->
+<!-- If your service captures screen or similar -->
+    <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" /> -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+
+    <application
+        android:name=".MainApplication"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:allowBackup="false"
+        android:theme="@style/AppTheme"
+        android:supportsRtl="true">
+
+        <!-- Main Overlay Foreground Service -->
+      <!-- Main Overlay Foreground Service -->
+<service
+    android:name=".overlay.OverlayService"
+    android:exported="false"
+            android:foregroundServiceType="specialUse"
+
+
+    android:launchMode="singleInstance" />
+
+<!-- Other Overlay Services (Non-Foreground or Basic Types) -->
+
+<service
+    android:name=".overlay_blue.OverlayServiceBlue"
+    android:exported="false"
+    android:launchMode="singleInstance" />
+    
+<service
+    android:name=".overlay_cyan.OverlayServiceCyan"
+    android:exported="false"
+    android:launchMode="singleInstance" />
+
+<service
+    android:name=".overlay_lavender.OverlayServiceLavender"
+    android:exported="false"
+    android:launchMode="singleInstance" />
+
+<!-- Other unrelated services keep as-is -->
+<service 
+    android:name="com.asterinet.react.bgactions.RNBackgroundActionsTask"
+    android:foregroundServiceType="dataSync" />
+
+<service android:name="com.voximplant.foregroundservice.VIForegroundService" />
+
+        <service 
+          android:name="com.asterinet.react.bgactions.RNBackgroundActionsTask"
+          android:foregroundServiceType="dataSync"
+        />
+        <service android:name="com.voximplant.foregroundservice.VIForegroundService"> </service>
+
+
+
+       
+
+
+        <!-- Entry Activity -->
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/app_name"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+            <uses-library android:name="org.apache.http.legacy" android:required="false" />
+
+
+    </application>
+
+</manifest>
