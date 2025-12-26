@@ -4,15 +4,13 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  NativeModules,
   Pressable,
 } from 'react-native';
 import Svg, {Path, Circle} from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Picker} from '@react-native-picker/picker';
 import Slider from '@react-native-community/slider';
-
-const {Overlay} = NativeModules;
+import {Overlay} from '../src/platform';
 
 const STORAGE_KEYS = {
   overlayOn: '@overlayOn',
@@ -145,20 +143,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({onBackPress}) => {
 
   // Hide overlay
   const hideOverlay = () => {
-    try {
-      Overlay?.hideOverlay();
-    } catch (e) {
-      console.log('Error hiding overlay:', e);
-    }
+    Overlay.hideOverlay();
   };
 
   // Show overlay
   const showOverlay = (onDur: number, offDur: number, size: number, color: string) => {
-    try {
-      Overlay?.showOverlay(onDur, offDur, size, color);
-    } catch (e) {
-      console.log('Error showing overlay:', e);
-    }
+    Overlay.showOverlay(onDur, offDur, size, color);
   };
 
   // Save state to AsyncStorage

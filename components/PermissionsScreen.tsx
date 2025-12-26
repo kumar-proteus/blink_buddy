@@ -4,17 +4,13 @@ import {
   Text,
   StyleSheet,
   Platform,
-  PermissionsAndroid,
-  NativeModules,
-  Linking,
   AppState,
   AppStateStatus,
   Pressable,
   ActivityIndicator,
 } from 'react-native';
 import Svg, {Path, Circle} from 'react-native-svg';
-
-const {OverlayPermission, Usage} = NativeModules;
+import {Permissions} from '../src/platform';
 
 interface PermissionsScreenProps {
   onAllPermissionsGranted: () => void;
@@ -108,41 +104,17 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
     let overlay = false;
     let usage = false;
 
-    if (Platform.OS === 'android') {
-      // Check notification permission
-      if (Platform.Version >= 33) {
-        notification = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-        );
-      } else {
-        // For Android < 13, notifications are enabled by default
-        notification = true;
-      }
-      setNotificationPermission(notification);
+    // Check notification permission
+    notification = await Permissions.checkNotificationPermission();
+    setNotificationPermission(notification);
 
-      // Check overlay permission
-      try {
-        if (OverlayPermission && OverlayPermission.canDrawOverlays) {
-          overlay = await OverlayPermission.canDrawOverlays();
-        } else {
-          // Fallback: Try to check via Settings
-          overlay = await NativeModules.OverlayPermission?.canDrawOverlays?.() ?? false;
-        }
-      } catch (error) {
-        console.log('Error checking overlay permission:', error);
-      }
-      setOverlayPermission(overlay);
+    // Check overlay permission
+    overlay = await Permissions.canDrawOverlays();
+    setOverlayPermission(overlay);
 
-      // Check usage access permission
-      try {
-        if (Usage && Usage.hasUsagePermission) {
-          usage = await Usage.hasUsagePermission();
-        }
-      } catch (error) {
-        console.log('Error checking usage permission:', error);
-      }
-      setUsagePermission(usage);
-    }
+    // Check usage access permission
+    usage = await Permissions.hasUsagePermission();
+    setUsagePermission(usage);
 
     return {notification, overlay, usage};
   }, []);
@@ -191,36 +163,13 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
 
   // Request notification permission
   const requestNotificationPermission = async () => {
-    if (Platform.OS === 'android' && Platform.Version >= 33) {
-      const result = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-        {
-          title: 'Notification Permission',
-          message: 'Blink Buddy needs notification permission to remind you to blink',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-      setNotificationPermission(result === PermissionsAndroid.RESULTS.GRANTED);
-    }
+    const granted = await Permissions.requestNotificationPermission();
+    setNotificationPermission(granted);
   };
 
   // Request overlay permission (opens system settings)
   const requestOverlayPermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        if (OverlayPermission && OverlayPermission.requestOverlayPermission) {
-          await OverlayPermission.requestOverlayPermission();
-        } else {
-          // Fallback: Open settings manually
-          Linking.openSettings();
-        }
-      } catch (error) {
-        console.log('Error requesting overlay permission:', error);
-        Linking.openSettings();
-      }
-    }
+    await Permissions.requestOverlayPermission();
   };
 
   const handleNotificationToggle = () => {
@@ -237,15 +186,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
 
   // Request usage access permission (opens system settings)
   const requestUsagePermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        if (Usage && Usage.requestUsagePermission) {
-          await Usage.requestUsagePermission();
-        }
-      } catch (error) {
-        console.log('Error requesting usage permission:', error);
-      }
-    }
+    await Permissions.requestUsagePermission();
   };
 
   const handleUsageToggle = () => {

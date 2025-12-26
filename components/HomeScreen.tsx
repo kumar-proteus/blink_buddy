@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  NativeModules,
   Pressable,
   Dimensions,
   Platform,
@@ -13,8 +12,8 @@ import {
 } from 'react-native';
 import Svg, {Path, Circle, Rect} from 'react-native-svg';
 import {LineChart} from 'react-native-chart-kit';
+import {Usage} from '../src/platform';
 
-const {Usage} = NativeModules;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 // App usage stats interface
@@ -272,56 +271,62 @@ const HomeScreen: React.FC<HomeScreenProps> = ({onSettingsPress}) => {
   const loadUsageStats = async (duration: DurationOption) => {
     setIsLoading(true);
     try {
-      if (Platform.OS === 'android' && Usage) {
-        const hasPermission = await Usage.hasUsagePermission();
-        if (hasPermission) {
-          const days = DURATION_OPTIONS[duration].days;
-          const stats: AppUsageStat[] = await Usage.getUsageStats(days);
-          const filtered = stats
-            .filter((a) => typeof a.totalTimeInForeground === 'number')
-            .filter((a) => !isSystemApp(a.packageName))
-            .sort((a, b) => b.totalTimeInForeground - a.totalTimeInForeground);
+      // Check if usage stats are supported on this platform
+      if (!Usage.isSupported()) {
+        console.log('Usage stats not supported on this platform');
+        setAppStats([]);
+        setIsLoading(false);
+        return;
+      }
 
-          // Remove duplicates by packageName
-          const uniqueStats: AppUsageStat[] = [];
-          const seen = new Set();
-          for (const app of filtered) {
-            if (!seen.has(app.packageName)) {
-              seen.add(app.packageName);
-              uniqueStats.push(app);
+      const hasPermission = await Usage.hasUsagePermission();
+      if (hasPermission) {
+        const days = DURATION_OPTIONS[duration].days;
+        const stats: AppUsageStat[] = await Usage.getUsageStats(days);
+        const filtered = stats
+          .filter((a) => typeof a.totalTimeInForeground === 'number')
+          .filter((a) => !isSystemApp(a.packageName))
+          .sort((a, b) => b.totalTimeInForeground - a.totalTimeInForeground);
+
+        // Remove duplicates by packageName
+        const uniqueStats: AppUsageStat[] = [];
+        const seen = new Set();
+        for (const app of filtered) {
+          if (!seen.has(app.packageName)) {
+            seen.add(app.packageName);
+            uniqueStats.push(app);
+          }
+        }
+        setAppStats(uniqueStats);
+
+        // Load app icons for top 10 apps in parallel
+        const topApps = uniqueStats.slice(0, 10);
+        console.log('Loading icons for', topApps.length, 'apps');
+        const iconPromises = topApps.map(async app => {
+          try {
+            const iconUri = await Usage.getAppIcon(app.packageName);
+            console.log('Icon result for', app.packageName, ':', iconUri ? 'loaded' : 'null');
+            return {packageName: app.packageName, iconUri};
+          } catch (e) {
+            console.warn('Failed to load icon for', app.packageName, e);
+            return {packageName: app.packageName, iconUri: null};
+          }
+        });
+
+        const iconResults = await Promise.all(iconPromises);
+        const icons: {[key: string]: string} = {};
+        iconResults.forEach(result => {
+          if (result.iconUri) {
+            icons[result.packageName] = result.iconUri;
+            // Log first 100 chars of first icon to verify format
+            if (Object.keys(icons).length === 1) {
+              console.log('First icon URI sample:', result.iconUri.substring(0, 100));
             }
           }
-          setAppStats(uniqueStats);
-
-          // Load app icons for top 10 apps in parallel
-          const topApps = uniqueStats.slice(0, 10);
-          console.log('Loading icons for', topApps.length, 'apps');
-          const iconPromises = topApps.map(async app => {
-            try {
-              const iconUri = await Usage.getAppIcon(app.packageName);
-              console.log('Icon result for', app.packageName, ':', iconUri ? 'loaded' : 'null');
-              return {packageName: app.packageName, iconUri};
-            } catch (e) {
-              console.warn('Failed to load icon for', app.packageName, e);
-              return {packageName: app.packageName, iconUri: null};
-            }
-          });
-
-          const iconResults = await Promise.all(iconPromises);
-          const icons: {[key: string]: string} = {};
-          iconResults.forEach(result => {
-            if (result.iconUri) {
-              icons[result.packageName] = result.iconUri;
-              // Log first 100 chars of first icon to verify format
-              if (Object.keys(icons).length === 1) {
-                console.log('First icon URI sample:', result.iconUri.substring(0, 100));
-              }
-            }
-          });
-          console.log('Total icons loaded:', Object.keys(icons).length);
-          console.log('Icon keys:', Object.keys(icons));
-          setAppIcons(icons);
-        }
+        });
+        console.log('Total icons loaded:', Object.keys(icons).length);
+        console.log('Icon keys:', Object.keys(icons));
+        setAppIcons(icons);
       }
     } catch (error) {
       console.warn('Failed to load usage stats:', error);
