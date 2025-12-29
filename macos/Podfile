@@ -6,7 +6,7 @@ ENV['NO_FLIPPER'] = '1'
 
 platform :macos, '11.0'
 
-# Create dummy ReactCodegen podspec before anything else
+# Create dummy ReactCodegen podspec
 codegen_path = File.join(__dir__, '..', 'build', 'generated', 'ios')
 FileUtils.mkdir_p(codegen_path)
 File.write(File.join(codegen_path, 'ReactCodegen.podspec'), <<~'PODSPEC')
@@ -24,29 +24,49 @@ end
 PODSPEC
 File.write(File.join(codegen_path, 'dummy.h'), "// Dummy file\n")
 
-# Define helper functions at top level (required by third-party podspecs)
-def get_double_conversion_config
-  { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v1.1.6" }
-end
+# Create local podspecs for third-party deps (avoiding the ones that need helper functions)
+third_party_path = File.join(__dir__, 'third-party-podspecs')
+FileUtils.mkdir_p(third_party_path)
 
-def get_glog_config
-  { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v0.3.5" }
+# DoubleConversion podspec
+File.write(File.join(third_party_path, 'DoubleConversion.podspec'), <<~'PODSPEC')
+Pod::Spec.new do |s|
+  s.name         = "DoubleConversion"
+  s.version      = "1.1.6"
+  s.summary      = "Efficient binary-decimal and decimal-binary conversion routines for IEEE doubles"
+  s.homepage     = "https://github.com/google/double-conversion"
+  s.license      = { :type => "BSD-3-Clause", :file => "LICENSE" }
+  s.author       = "Google"
+  s.platforms    = { :osx => "11.0" }
+  s.source       = { :git => "https://github.com/nicklockwood/double-conversion.git", :tag => "v#{s.version}" }
+  s.source_files = "double-conversion/*.{h,cc}"
+  s.header_dir   = "double-conversion"
 end
+PODSPEC
 
-def get_boost_config
-  { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v1.76.0" }
+# glog podspec
+File.write(File.join(third_party_path, 'glog.podspec'), <<~'PODSPEC')
+Pod::Spec.new do |s|
+  s.name         = "glog"
+  s.version      = "0.3.5"
+  s.summary      = "Google logging module"
+  s.homepage     = "https://github.com/google/glog"
+  s.license      = { :type => "BSD-3-Clause", :file => "COPYING" }
+  s.author       = "Google"
+  s.platforms    = { :osx => "11.0" }
+  s.source       = { :git => "https://github.com/nicklockwood/glog.git", :tag => "v#{s.version}" }
+  s.source_files = "src/*.{h,cc}"
+  s.preserve_paths = "src/*.h"
+  s.header_dir   = "glog"
 end
-
-def get_fmt_config
-  { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v6.2.1" }
-end
+PODSPEC
 
 target 'BlinkBuddy-macOS' do
   rn_path = '../node_modules/react-native-macos'
 
-  # Third-party dependencies
-  pod 'DoubleConversion', :podspec => "#{rn_path}/third-party-podspecs/DoubleConversion.podspec"
-  pod 'glog', :podspec => "#{rn_path}/third-party-podspecs/glog.podspec"
+  # Third-party dependencies using local podspecs
+  pod 'DoubleConversion', :podspec => './third-party-podspecs/DoubleConversion.podspec'
+  pod 'glog', :podspec => './third-party-podspecs/glog.podspec'
   pod 'boost', :podspec => "#{rn_path}/third-party-podspecs/boost.podspec"
   pod 'RCT-Folly', :podspec => "#{rn_path}/third-party-podspecs/RCT-Folly.podspec"
 
