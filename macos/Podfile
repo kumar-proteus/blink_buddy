@@ -1,4 +1,4 @@
-# Completely disable codegen to avoid build issues with version mismatch
+# Disable codegen and new architecture
 ENV['DISABLE_CODEGEN'] = '1'
 ENV['RCT_NEW_ARCH_ENABLED'] = '0'
 ENV['USE_HERMES'] = '0'
@@ -6,11 +6,10 @@ ENV['NO_FLIPPER'] = '1'
 
 platform :macos, '11.0'
 
-# Create dummy ReactCodegen podspec before loading any RN scripts
+# Create dummy ReactCodegen podspec before anything else
 codegen_path = File.join(__dir__, '..', 'build', 'generated', 'ios')
-codegen_podspec = File.join(codegen_path, 'ReactCodegen.podspec')
 FileUtils.mkdir_p(codegen_path)
-File.write(codegen_podspec, <<~'PODSPEC')
+File.write(File.join(codegen_path, 'ReactCodegen.podspec'), <<~'PODSPEC')
 Pod::Spec.new do |s|
   s.name         = "ReactCodegen"
   s.version      = "0.0.1"
@@ -25,99 +24,60 @@ end
 PODSPEC
 File.write(File.join(codegen_path, 'dummy.h'), "// Dummy file\n")
 
-# Monkey-patch to skip codegen generation
-module Pod
-  class Installer
-    class Xcode
-      class PodsProjectGenerator
-        class << self
-          alias_method :original_generate_app_codegen_files, :generate_app_codegen_files if method_defined?(:generate_app_codegen_files)
-        end
-        def self.generate_app_codegen_files(*args)
-          Pod::UI.puts "Skipping codegen generation for macOS build"
-        end
-      end
-    end
-  end
-end
-
-# Override prepare_react_native_project! to skip codegen
+# Skip prepare_react_native_project!
 def prepare_react_native_project!
-  Pod::UI.puts "Skipping prepare_react_native_project! (codegen disabled)"
+  # no-op
 end
 
-# Load native modules helper with fallback
-native_modules_loaded = false
-['../node_modules/@react-native-community/cli-platform-ios/native_modules',
- '../node_modules/@react-native/cli-platform-ios/native_modules'].each do |path|
+# Try to load native modules, fallback if not available
+begin
+  require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+rescue LoadError
   begin
-    require_relative path
-    native_modules_loaded = true
-    break
+    require_relative '../node_modules/@react-native/cli-platform-ios/native_modules'
   rescue LoadError
-    next
-  end
-end
-
-unless native_modules_loaded
-  def use_native_modules!
-    { reactNativePath: '../node_modules/react-native-macos' }
-  end
-end
-
-# Define use_react_native! if not already defined
-unless defined?(use_react_native!)
-  def use_react_native!(options = {})
-    path = options[:path] || '../node_modules/react-native-macos'
-
-    # Core React Native pods for macOS
-    pod 'React-Core', :path => "#{path}/React"
-    pod 'React-CoreModules', :path => "#{path}/React/CoreModules"
-    pod 'React-RCTActionSheet', :path => "#{path}/Libraries/ActionSheetIOS"
-    pod 'React-RCTAnimation', :path => "#{path}/Libraries/NativeAnimation"
-    pod 'React-RCTBlob', :path => "#{path}/Libraries/Blob"
-    pod 'React-RCTImage', :path => "#{path}/Libraries/Image"
-    pod 'React-RCTLinking', :path => "#{path}/Libraries/LinkingIOS"
-    pod 'React-RCTNetwork', :path => "#{path}/Libraries/Network"
-    pod 'React-RCTSettings', :path => "#{path}/Libraries/Settings"
-    pod 'React-RCTText', :path => "#{path}/Libraries/Text"
-    pod 'React-RCTVibration', :path => "#{path}/Libraries/Vibration"
-    pod 'React-cxxreact', :path => "#{path}/ReactCommon/cxxreact"
-    pod 'React-jsi', :path => "#{path}/ReactCommon/jsi"
-    pod 'React-jsiexecutor', :path => "#{path}/ReactCommon/jsiexecutor"
-    pod 'React-jsinspector', :path => "#{path}/ReactCommon/jsinspector-modern"
-    pod 'React-callinvoker', :path => "#{path}/ReactCommon/callinvoker"
-    pod 'React-runtimeexecutor', :path => "#{path}/ReactCommon/runtimeexecutor"
-    pod 'React-perflogger', :path => "#{path}/ReactCommon/reactperflogger"
-    pod 'React-logger', :path => "#{path}/ReactCommon/logger"
-    pod 'RCT-Folly', :podspec => "#{path}/third-party-podspecs/RCT-Folly.podspec"
-    pod 'glog', :podspec => "#{path}/third-party-podspecs/glog.podspec"
-    pod 'DoubleConversion', :podspec => "#{path}/third-party-podspecs/DoubleConversion.podspec"
-    pod 'fmt', :podspec => "#{path}/third-party-podspecs/fmt.podspec"
-    pod 'boost', :podspec => "#{path}/third-party-podspecs/boost.podspec"
-    pod 'RCTTypeSafety', :path => "#{path}/Libraries/TypeSafety"
-    pod 'ReactCommon/turbomodule/core', :path => "#{path}/ReactCommon"
-    pod 'Yoga', :path => "#{path}/ReactCommon/yoga"
-    pod 'FBLazyVector', :path => "#{path}/Libraries/FBLazyVector"
-    pod 'FBReactNativeSpec', :path => "#{path}/React/FBReactNativeSpec"
-    pod 'React-graphics', :path => "#{path}/ReactCommon/react/renderer/graphics"
-    pod 'React-rncore', :path => "#{path}/ReactCommon"
+    def use_native_modules!
+      { reactNativePath: '../node_modules/react-native-macos' }
+    end
   end
 end
 
 target 'BlinkBuddy-macOS' do
   config = use_native_modules!
-  rn_path = config[:reactNativePath] || '../node_modules/react-native-macos'
+  rn_path = '../node_modules/react-native-macos'
 
-  use_react_native!(:path => rn_path)
+  # Core React Native pods
+  pod 'FBLazyVector', :path => "#{rn_path}/Libraries/FBLazyVector"
+  pod 'RCT-Folly', :podspec => "#{rn_path}/third-party-podspecs/RCT-Folly.podspec"
+  pod 'RCTTypeSafety', :path => "#{rn_path}/Libraries/TypeSafety"
+  pod 'React-Core', :path => "#{rn_path}/"
+  pod 'React-CoreModules', :path => "#{rn_path}/React/CoreModules"
+  pod 'React-RCTActionSheet', :path => "#{rn_path}/Libraries/ActionSheetIOS"
+  pod 'React-RCTAnimation', :path => "#{rn_path}/Libraries/NativeAnimation"
+  pod 'React-RCTBlob', :path => "#{rn_path}/Libraries/Blob"
+  pod 'React-RCTImage', :path => "#{rn_path}/Libraries/Image"
+  pod 'React-RCTLinking', :path => "#{rn_path}/Libraries/LinkingIOS"
+  pod 'React-RCTNetwork', :path => "#{rn_path}/Libraries/Network"
+  pod 'React-RCTSettings', :path => "#{rn_path}/Libraries/Settings"
+  pod 'React-RCTText', :path => "#{rn_path}/Libraries/Text"
+  pod 'React-RCTVibration', :path => "#{rn_path}/Libraries/Vibration"
+  pod 'React-cxxreact', :path => "#{rn_path}/ReactCommon/cxxreact"
+  pod 'React-jsi', :path => "#{rn_path}/ReactCommon/jsi"
+  pod 'React-jsiexecutor', :path => "#{rn_path}/ReactCommon/jsiexecutor"
+  pod 'React-callinvoker', :path => "#{rn_path}/ReactCommon/callinvoker"
+  pod 'React-runtimeexecutor', :path => "#{rn_path}/ReactCommon/runtimeexecutor"
+  pod 'React-perflogger', :path => "#{rn_path}/ReactCommon/reactperflogger"
+  pod 'React-logger', :path => "#{rn_path}/ReactCommon/logger"
+  pod 'ReactCommon/turbomodule/core', :path => "#{rn_path}/ReactCommon"
+  pod 'Yoga', :path => "#{rn_path}/ReactCommon/yoga"
+  pod 'DoubleConversion', :podspec => "#{rn_path}/third-party-podspecs/DoubleConversion.podspec"
+  pod 'glog', :podspec => "#{rn_path}/third-party-podspecs/glog.podspec"
+  pod 'boost', :podspec => "#{rn_path}/third-party-podspecs/boost.podspec"
 
   post_install do |installer|
     installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '11.0'
-        # Fix for Xcode 15+ issues
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'RCT_NEW_ARCH_ENABLED=0'
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '11.0'
       end
     end
   end
