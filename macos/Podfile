@@ -7,26 +7,9 @@ ENV['CI'] = '1'
 
 platform :macos, '11.0'
 
-# Create dummy ReactCodegen podspec in BOTH locations (project root and macos folder)
-# Some scripts look relative to project root, others relative to macos/
-[File.join(__dir__, '..', 'build', 'generated', 'ios'),
- File.join(__dir__, 'build', 'generated', 'ios')].each do |codegen_path|
-  FileUtils.mkdir_p(codegen_path)
-  File.write(File.join(codegen_path, 'ReactCodegen.podspec'), <<~'PODSPEC')
-Pod::Spec.new do |s|
-  s.name         = "ReactCodegen"
-  s.version      = "0.0.1"
-  s.summary      = "Dummy spec for macOS build"
-  s.homepage     = "https://reactnative.dev"
-  s.license      = "MIT"
-  s.author       = "Meta"
-  s.platforms    = { :osx => "11.0" }
-  s.source       = { :git => "", :tag => "0.0.1" }
-  s.source_files = "dummy.h"
-end
-  PODSPEC
-  File.write(File.join(codegen_path, 'dummy.h'), "// Dummy file\n")
-end
+# ReactCodegen dummy podspec files are checked into the repo at:
+# - build/generated/ios/ReactCodegen.podspec
+# - macos/build/generated/ios/ReactCodegen.podspec
 
 # Stub out the codegen script before it gets called
 ENV['REACT_NATIVE_PATH'] = File.join(__dir__, '..', 'node_modules', 'react-native-macos')
