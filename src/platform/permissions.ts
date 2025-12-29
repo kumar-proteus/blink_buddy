@@ -138,6 +138,8 @@ const DesktopPermissions: PermissionsInterface = {
   isUsageStatsSupported: () => false,
 };
 
+// Export the appropriate implementation based on platform
+// Android uses native permission modules, macOS/iOS auto-grant permissions
 export const Permissions: PermissionsInterface =
   Platform.OS === 'android' ? AndroidPermissions : DesktopPermissions;
 

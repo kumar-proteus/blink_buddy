@@ -55,6 +55,7 @@ const DesktopOverlay: OverlayInterface = {
 };
 
 // Export the appropriate implementation based on platform
+// Android uses native overlay module, macOS/iOS use desktop stub
 export const Overlay: OverlayInterface =
   Platform.OS === 'android' ? AndroidOverlay : DesktopOverlay;
 

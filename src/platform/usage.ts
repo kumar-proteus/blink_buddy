@@ -95,6 +95,8 @@ const DesktopUsage: UsageInterface = {
   isSupported: () => false,
 };
 
+// Export the appropriate implementation based on platform
+// Android uses native usage module, macOS/iOS return empty data
 export const Usage: UsageInterface =
   Platform.OS === 'android' ? AndroidUsage : DesktopUsage;
 
