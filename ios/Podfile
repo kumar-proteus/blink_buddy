@@ -1,4 +1,4 @@
-platform :ios, '13.0'
+platform :ios, '15.1'
 require_relative '../node_modules/react-native/scripts/react_native_pods'
 
 # Attempt to load the RN CLI native_modules from either possible package locations.
@@ -30,11 +30,7 @@ target 'BlinkBuddy' do
   use_react_native!(
     :path => config[:reactNativePath]
   )
-
-  target 'BlinkBuddyTests' do
-    inherit! :complete
-    # Pods for testing
-  end
+ 
 
   # Enables Flipper if available. If the helper is not defined, skip it.
   begin
