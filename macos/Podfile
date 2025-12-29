@@ -24,62 +24,24 @@ end
 PODSPEC
 File.write(File.join(codegen_path, 'dummy.h'), "// Dummy file\n")
 
-# Define helper functions in Pod module that podspecs expect
-module Pod
-  def self.get_double_conversion_config
-    { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v1.1.6" }
-  end
-
-  def self.get_glog_config
-    { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v0.3.5" }
-  end
-
-  def self.get_boost_config
-    { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v1.76.0" }
-  end
-
-  def self.get_fmt_config
-    { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v6.2.1" }
-  end
-end
-
-# Also define at top level for podspecs that call without Pod:: prefix
+# Define helper functions at top level (required by third-party podspecs)
 def get_double_conversion_config
-  Pod.get_double_conversion_config
+  { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v1.1.6" }
 end
 
 def get_glog_config
-  Pod.get_glog_config
+  { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v0.3.5" }
 end
 
 def get_boost_config
-  Pod.get_boost_config
+  { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v1.76.0" }
 end
 
 def get_fmt_config
-  Pod.get_fmt_config
-end
-
-# Skip prepare_react_native_project!
-def prepare_react_native_project!
-  # no-op
-end
-
-# Try to load native modules, fallback if not available
-begin
-  require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
-rescue LoadError
-  begin
-    require_relative '../node_modules/@react-native/cli-platform-ios/native_modules'
-  rescue LoadError
-    def use_native_modules!
-      { reactNativePath: '../node_modules/react-native-macos' }
-    end
-  end
+  { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v6.2.1" }
 end
 
 target 'BlinkBuddy-macOS' do
-  config = use_native_modules!
   rn_path = '../node_modules/react-native-macos'
 
   # Third-party dependencies
