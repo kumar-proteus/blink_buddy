@@ -1,3 +1,7 @@
+# Disable codegen generation to avoid codegen errors during Pod install on some setups
+# Set to '1' to skip running React Native codegen from CocoaPods
+ENV['DISABLE_CODEGEN'] = '1'
+
 # Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
@@ -18,7 +22,7 @@ target 'BlinkBuddy-macOS' do
   config = use_native_modules!
 
   use_react_native!(
-    :path => config[:reactNativePath],
+    :path => "../node_modules/react-native-macos",
     # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
