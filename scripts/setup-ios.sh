@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# BlinkBuddy macOS Setup Script
-# Run this script on a macOS machine to set up the development environment
+# BlinkBuddy iOS Setup Script
+# Run this script on a macOS machine to set up iOS development
 
 set -euo pipefail
 trap 'echo "Error on line $LINENO. Exiting." >&2' ERR
 
 echo "==================================="
-echo "BlinkBuddy macOS Setup"
+echo "BlinkBuddy iOS Setup"
 echo "==================================="
 echo ""
 
@@ -17,7 +17,6 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
     exit 1
 fi
 
-# Check for required tools
 echo "Checking prerequisites..."
 
 # Check for Xcode
@@ -71,21 +70,19 @@ else
 fi
 
 echo ""
-echo "Installing CocoaPods dependencies for macOS..."
-cd macos
+echo "Installing CocoaPods dependencies for iOS..."
+cd ios
 pod install --repo-update
 cd ..
 
 echo ""
 echo "==================================="
-echo "Setup Complete!"
+echo "iOS Setup Complete!"
 echo "==================================="
 echo ""
-echo "To run the app in development mode:"
-echo "  npm run macos"
+echo "To run the app in development mode (iOS simulator):"
+echo "  npm run ios"
 echo ""
 echo "Or open in Xcode:"
-echo "  open macos/BlinkBuddy-macOS.xcworkspace"
-echo ""
-echo "Then press Cmd+R to build and run."
+echo "  open ios/BlinkBuddy.xcworkspace"
 echo ""

@@ -1,35 +1,50 @@
-# Resolve react_native_pods.rb with node to allow for hoisting
-require Pod::Executable.execute_command('node', ['-p',
-  'require.resolve(
-    "react-native/scripts/react_native_pods.rb",
-    {paths: [process.argv[1]]},
-  )', __dir__]).strip
+platform :ios, '13.0'
+require_relative '../node_modules/react-native/scripts/react_native_pods'
 
-platform :ios, min_ios_version_supported
-prepare_react_native_project!
-
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
+# Attempt to load the RN CLI native_modules from either possible package locations.
+# Some workspaces use '@react-native-community/cli-platform-ios' while newer setups use
+# '@react-native/cli-platform-ios'. If neither is present, fall back to a minimal
+# config so `pod install` can still proceed (useful for repos that haven't added an
+# Xcode ios/ project yet).
+native_modules_loaded = false
+['../node_modules/@react-native-community/cli-platform-ios/native_modules',
+ '../node_modules/@react-native/cli-platform-ios/native_modules'].each do |path|
+  begin
+    require_relative path
+    native_modules_loaded = true
+    break
+  rescue LoadError
+    next
+  end
 end
 
-target 'Blinkbuddy' do
+unless native_modules_loaded
+  def use_native_modules!
+    return { reactNativePath: '../node_modules/react-native' }
+  end
+end
+
+target 'BlinkBuddy' do
   config = use_native_modules!
 
   use_react_native!(
-    :path => config[:reactNativePath],
-    # An absolute path to your application root.
-    :app_path => "#{Pod::Config.instance.installation_root}/.."
+    :path => config[:reactNativePath]
   )
 
+  target 'BlinkBuddyTests' do
+    inherit! :complete
+    # Pods for testing
+  end
+
+  # Enables Flipper if available. If the helper is not defined, skip it.
+  begin
+    use_flipper!
+  rescue NoMethodError
+    puts 'use_flipper! helper not available; skipping Flipper setup.'
+  end
+
   post_install do |installer|
-    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
-    react_native_post_install(
-      installer,
-      config[:reactNativePath],
-      :mac_catalyst_enabled => false,
-      # :ccache_enabled => true
-    )
+    react_native_post_install(installer)
+    __apply_Xcode_12_5_M1_post_install_workaround(installer)
   end
 end
