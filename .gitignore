@@ -63,8 +63,18 @@ yarn-error.log
 # macOS specific
 macos/BlinkBuddy-macOS.xcworkspace/
 macos/build/
+!macos/build/generated/
+!macos/build/generated/ios/
+!macos/build/generated/ios/ReactCodegen.podspec
+!macos/build/generated/ios/dummy.h
 *.app
 *.dmg
+
+# Keep ReactCodegen dummy podspec
+!build/generated/
+!build/generated/ios/
+!build/generated/ios/ReactCodegen.podspec
+!build/generated/ios/dummy.h
 
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
