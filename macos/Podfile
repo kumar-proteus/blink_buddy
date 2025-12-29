@@ -10,7 +10,7 @@ platform :macos, '11.0'
 codegen_path = File.join(__dir__, '..', 'build', 'generated', 'ios')
 codegen_podspec = File.join(codegen_path, 'ReactCodegen.podspec')
 FileUtils.mkdir_p(codegen_path)
-File.write(codegen_podspec, <<-PODSPEC)
+File.write(codegen_podspec, <<~'PODSPEC')
 Pod::Spec.new do |s|
   s.name         = "ReactCodegen"
   s.version      = "0.0.1"
@@ -19,7 +19,7 @@ Pod::Spec.new do |s|
   s.license      = "MIT"
   s.author       = "Meta"
   s.platforms    = { :osx => "11.0" }
-  s.source       = { :git => "", :tag => "#{s.version}" }
+  s.source       = { :git => "", :tag => "0.0.1" }
   s.source_files = "dummy.h"
 end
 PODSPEC
