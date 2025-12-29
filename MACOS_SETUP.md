@@ -126,11 +126,30 @@ Platform abstraction modules in `src/platform/`:
 
 ## Troubleshooting
 
+### ReactCodegen podspec not found
+
+If you see: `[!] No podspec found for ReactCodegen in build/generated/ios`
+
+This is due to a version mismatch between react-native (0.79) and react-native-macos (0.76). The Podfile is configured to auto-generate a dummy podspec, but if it fails:
+
+```bash
+cd ~/Development/blink_buddy
+
+# Clean everything
+rm -rf build/generated
+rm -rf macos/Pods macos/Podfile.lock
+
+# Run pod install with new arch disabled
+cd macos
+RCT_NEW_ARCH_ENABLED=0 pod install --repo-update
+```
+
 ### CocoaPods errors
 
 ```bash
 cd macos
 pod deintegrate
+rm -rf Pods Podfile.lock
 pod install --repo-update
 ```
 
@@ -141,8 +160,23 @@ pod install --repo-update
 3. Restart Xcode
 4. Re-run pod install:
    ```bash
-   cd macos && pod install && cd ..
+   cd macos
+   rm -rf Pods Podfile.lock
+   pod install --repo-update
    ```
+
+### xcodebuild error code 65
+
+This generic build failure can have several causes:
+
+1. **Missing pods**: Run `cd macos && pod install --repo-update`
+2. **Code signing**: Open Xcode and configure signing (see below)
+3. **Derived data corruption**: `rm -rf ~/Library/Developer/Xcode/DerivedData`
+
+For detailed errors, open Xcode and build there:
+```bash
+open macos/BlinkBuddy-macOS.xcworkspace
+```
 
 ### Metro bundler issues
 
@@ -158,7 +192,7 @@ Make sure Metro bundler is running:
 npm start
 ```
 
-### Apple Silicon (M1/M2) issues
+### Apple Silicon (M1/M2/M3) issues
 
 If you're on Apple Silicon and encounter issues, try:
 

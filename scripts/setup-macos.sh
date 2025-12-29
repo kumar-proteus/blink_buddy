@@ -71,9 +71,37 @@ else
 fi
 
 echo ""
+echo "Cleaning previous macOS build artifacts..."
+cd macos
+
+# Clean previous pod installation if exists
+if [ -d "Pods" ]; then
+    echo "Removing existing Pods directory..."
+    rm -rf Pods
+fi
+
+if [ -f "Podfile.lock" ]; then
+    echo "Removing existing Podfile.lock..."
+    rm -f Podfile.lock
+fi
+
+cd ..
+
+# Clean build/generated directory to ensure fresh codegen
+if [ -d "build/generated" ]; then
+    echo "Removing build/generated directory..."
+    rm -rf build/generated
+fi
+
+echo ""
 echo "Installing CocoaPods dependencies for macOS..."
 cd macos
+
+# Set environment variables to disable new architecture
+export RCT_NEW_ARCH_ENABLED=0
+
 pod install --repo-update
+
 cd ..
 
 echo ""
@@ -88,4 +116,9 @@ echo "Or open in Xcode:"
 echo "  open macos/BlinkBuddy-macOS.xcworkspace"
 echo ""
 echo "Then press Cmd+R to build and run."
+echo ""
+echo "Troubleshooting:"
+echo "  - If build fails, try: cd macos && pod deintegrate && pod install"
+echo "  - Clean Xcode build: Cmd+Shift+K in Xcode"
+echo "  - Reset Metro cache: npm start -- --reset-cache"
 echo ""

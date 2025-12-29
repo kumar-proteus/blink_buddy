@@ -1,19 +1,39 @@
-# Disable codegen and new architecture to avoid build issues
-ENV['DISABLE_CODEGEN'] = '1'
+# Disable new architecture to avoid codegen issues with react-native-macos 0.76
 ENV['RCT_NEW_ARCH_ENABLED'] = '0'
-ENV['USE_HERMES'] = '0'
-
-# Resolve react_native_pods.rb with node to allow for hoisting
-require Pod::Executable.execute_command('node', ['-p',
-  'require.resolve(
-    "react-native-macos/scripts/react_native_pods.rb",
-    {paths: [process.argv[1]]},
-  )', __dir__]).strip
 
 platform :macos, '11.0'
-prepare_react_native_project!
 
-# Create a dummy ReactCodegen podspec if it doesn't exist
+# Attempt to load react_native_pods from react-native-macos
+begin
+  require Pod::Executable.execute_command('node', ['-p',
+    'require.resolve(
+      "react-native-macos/scripts/react_native_pods.rb",
+      {paths: [process.argv[1]]},
+    )', __dir__]).strip
+rescue => e
+  Pod::UI.warn "Could not load react_native_pods.rb: #{e.message}"
+end
+
+# Attempt to load native_modules from either possible package locations
+native_modules_loaded = false
+['../node_modules/@react-native-community/cli-platform-ios/native_modules',
+ '../node_modules/@react-native/cli-platform-ios/native_modules'].each do |path|
+  begin
+    require_relative path
+    native_modules_loaded = true
+    break
+  rescue LoadError
+    next
+  end
+end
+
+unless native_modules_loaded
+  def use_native_modules!
+    return { reactNativePath: '../node_modules/react-native-macos' }
+  end
+end
+
+# Create dummy ReactCodegen podspec if it doesn't exist (workaround for version mismatch)
 codegen_path = File.join(__dir__, '..', 'build', 'generated', 'ios')
 codegen_podspec = File.join(codegen_path, 'ReactCodegen.podspec')
 unless File.exist?(codegen_podspec)
@@ -27,18 +47,11 @@ Pod::Spec.new do |s|
   s.license      = "MIT"
   s.author       = "Meta"
   s.platforms    = { :osx => "11.0" }
-  s.source       = { :git => "", :tag => "#{s.version}" }
+  s.source       = { :git => "", :tag => "\#{s.version}" }
   s.source_files = "dummy.h"
 end
   PODSPEC
-  # Create empty dummy file
   File.write(File.join(codegen_path, 'dummy.h'), "// Dummy file for ReactCodegen\n")
-end
-
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
 end
 
 target 'BlinkBuddy-macOS' do
@@ -46,15 +59,24 @@ target 'BlinkBuddy-macOS' do
 
   use_react_native!(
     :path => "../node_modules/react-native-macos",
-    # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
   post_install do |installer|
-    react_native_post_install(
-      installer,
-      config[:reactNativePath],
-      :mac_catalyst_enabled => false
-    )
+    # Apply standard post-install fixes
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '11.0'
+      end
+    end
+
+    # Call react_native_post_install if available
+    if defined?(react_native_post_install)
+      react_native_post_install(
+        installer,
+        "../node_modules/react-native-macos",
+        :mac_catalyst_enabled => false
+      )
+    end
   end
 end
