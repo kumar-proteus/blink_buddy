@@ -1,6 +1,7 @@
-# Disable codegen generation to avoid codegen errors during Pod install on some setups
-# Set to '1' to skip running React Native codegen from CocoaPods
+# Disable codegen and new architecture to avoid build issues
 ENV['DISABLE_CODEGEN'] = '1'
+ENV['RCT_NEW_ARCH_ENABLED'] = '0'
+ENV['USE_HERMES'] = '0'
 
 # Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command('node', ['-p',
@@ -11,6 +12,28 @@ require Pod::Executable.execute_command('node', ['-p',
 
 platform :macos, '11.0'
 prepare_react_native_project!
+
+# Create a dummy ReactCodegen podspec if it doesn't exist
+codegen_path = File.join(__dir__, '..', 'build', 'generated', 'ios')
+codegen_podspec = File.join(codegen_path, 'ReactCodegen.podspec')
+unless File.exist?(codegen_podspec)
+  FileUtils.mkdir_p(codegen_path)
+  File.write(codegen_podspec, <<-PODSPEC)
+Pod::Spec.new do |s|
+  s.name         = "ReactCodegen"
+  s.version      = "0.0.1"
+  s.summary      = "Dummy spec for macOS build"
+  s.homepage     = "https://reactnative.dev"
+  s.license      = "MIT"
+  s.author       = "Meta"
+  s.platforms    = { :osx => "11.0" }
+  s.source       = { :git => "", :tag => "#{s.version}" }
+  s.source_files = "dummy.h"
+end
+  PODSPEC
+  # Create empty dummy file
+  File.write(File.join(codegen_path, 'dummy.h'), "// Dummy file for ReactCodegen\n")
+end
 
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
