@@ -24,6 +24,42 @@ end
 PODSPEC
 File.write(File.join(codegen_path, 'dummy.h'), "// Dummy file\n")
 
+# Define helper functions in Pod module that podspecs expect
+module Pod
+  def self.get_double_conversion_config
+    { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v1.1.6" }
+  end
+
+  def self.get_glog_config
+    { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v0.3.5" }
+  end
+
+  def self.get_boost_config
+    { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v1.76.0" }
+  end
+
+  def self.get_fmt_config
+    { :git => "https://github.com/nicklockwood/react-native-macos.git", :tag => "v6.2.1" }
+  end
+end
+
+# Also define at top level for podspecs that call without Pod:: prefix
+def get_double_conversion_config
+  Pod.get_double_conversion_config
+end
+
+def get_glog_config
+  Pod.get_glog_config
+end
+
+def get_boost_config
+  Pod.get_boost_config
+end
+
+def get_fmt_config
+  Pod.get_fmt_config
+end
+
 # Skip prepare_react_native_project!
 def prepare_react_native_project!
   # no-op
@@ -46,9 +82,14 @@ target 'BlinkBuddy-macOS' do
   config = use_native_modules!
   rn_path = '../node_modules/react-native-macos'
 
+  # Third-party dependencies
+  pod 'DoubleConversion', :podspec => "#{rn_path}/third-party-podspecs/DoubleConversion.podspec"
+  pod 'glog', :podspec => "#{rn_path}/third-party-podspecs/glog.podspec"
+  pod 'boost', :podspec => "#{rn_path}/third-party-podspecs/boost.podspec"
+  pod 'RCT-Folly', :podspec => "#{rn_path}/third-party-podspecs/RCT-Folly.podspec"
+
   # Core React Native pods
   pod 'FBLazyVector', :path => "#{rn_path}/Libraries/FBLazyVector"
-  pod 'RCT-Folly', :podspec => "#{rn_path}/third-party-podspecs/RCT-Folly.podspec"
   pod 'RCTTypeSafety', :path => "#{rn_path}/Libraries/TypeSafety"
   pod 'React-Core', :path => "#{rn_path}/"
   pod 'React-CoreModules', :path => "#{rn_path}/React/CoreModules"
@@ -70,9 +111,6 @@ target 'BlinkBuddy-macOS' do
   pod 'React-logger', :path => "#{rn_path}/ReactCommon/logger"
   pod 'ReactCommon/turbomodule/core', :path => "#{rn_path}/ReactCommon"
   pod 'Yoga', :path => "#{rn_path}/ReactCommon/yoga"
-  pod 'DoubleConversion', :podspec => "#{rn_path}/third-party-podspecs/DoubleConversion.podspec"
-  pod 'glog', :podspec => "#{rn_path}/third-party-podspecs/glog.podspec"
-  pod 'boost', :podspec => "#{rn_path}/third-party-podspecs/boost.podspec"
 
   post_install do |installer|
     installer.pods_project.targets.each do |target|
