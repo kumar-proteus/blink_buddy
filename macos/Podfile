@@ -38,6 +38,10 @@ end
 target 'BlinkBuddy-macOS' do
   rn_path = '../node_modules/react-native-macos'
 
+  # Ensure the generated ReactCodegen podspec is visible to CocoaPods.
+  # Prefer repository-level generated podspecs (build/generated/ios) when available.
+  pod 'ReactCodegen', :path => 'build/generated/ios' if File.exist?(File.join(__dir__, 'build', 'generated', 'ios', 'ReactCodegen.podspec'))
+
   use_react_native!(
     :path => rn_path,
     :app_path => "#{Pod::Config.instance.installation_root}/.."
